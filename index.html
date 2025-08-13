@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EmojiGarden – AFK mini prototype + Quests</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #111830;
+        --soft: #151d39;
+        --acc: #3b82f6;
+        --text: #e7eefc;
+        --muted: #9fb3d9;
+        --ok: #22c55e;
+        --warn: #f59e0b;
+        --danger: #ef4444;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter,
+          Helvetica, Arial, sans-serif;
+        background: radial-gradient(
+          1200px 600px at 20% -10%,
+          #1a2447 0%,
+          #0b1020 55%
+        );
+        color: var(--text);
+      }
+      .wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 16px 16px 32px;
+      }
+      header {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        margin: 8px 0 16px;
+      }
+      .title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .title h1 {
+        font-size: clamp(20px, 4vw, 28px);
+        margin: 0;
+        letter-spacing: 0.5px;
+      }
+      .pill {
+        background: linear-gradient(180deg, #2a3767, #1b2547);
+        border: 1px solid #26315b;
+        border-radius: 999px;
+        padding: 8px 12px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      }
+      .stat {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .stat small {
+        color: var(--muted);
+      }
+      .panel {
+        background: linear-gradient(180deg, var(--panel), var(--soft));
+        border: 1px solid #1b2547;
+        border-radius: 16px;
+        padding: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      }
+
+      /* Toolbar */
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .cropBtn {
+        border: 1px solid #26315b;
+        border-radius: 12px;
+        padding: 10px 12px;
+        background: #131b36;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 130px;
+        justify-content: space-between;
+      }
+      .cropBtn[aria-pressed="true"] {
+        outline: 2px solid var(--acc);
+        outline-offset: 1px;
+        background: #0f172e;
+      }
+      .cropBtn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .cropMeta {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .badge {
+        font-size: 12px;
+        color: #dbe7ff;
+        background: #1b274f;
+        border: 1px solid #2b3a73;
+        border-radius: 999px;
+        padding: 2px 8px;
+      }
+
+      /* Grid */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+      }
+      @media (max-width: 640px) {
+        .grid {
+          grid-template-columns: repeat(4, 1fr);
+        }
+      }
+      .plot {
+        position: relative;
+        min-height: 72px;
+        border-radius: 14px;
+        padding: 8px;
+        background: linear-gradient(180deg, #263b1f, #1c2b18);
+        border: 1px solid #2d4a23;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        user-select: none;
+        cursor: pointer;
+        transition: transform 0.06s;
+      }
+      .plot:hover {
+        transform: translateY(-1px);
+      }
+      .empty {
+        background: linear-gradient(180deg, #253247, #1a2239);
+        border-color: #2a3553;
+      }
+      .timer {
+        position: absolute;
+        left: 8px;
+        top: 6px;
+        font-size: 12px;
+        color: #cfe6ff;
+        background: rgba(17, 24, 48, 0.6);
+        padding: 2px 6px;
+        border-radius: 8px;
+        border: 1px solid #31406f;
+      }
+      .progress {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 6px;
+        background: #0d152c;
+        border-radius: 0 0 14px 14px;
+        overflow: hidden;
+      }
+      .progress > i {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, #2563eb, #22c55e);
+      }
+      .hint {
+        position: absolute;
+        right: 6px;
+        top: 6px;
+        font-size: 12px;
+        color: #c6d5ff;
+        opacity: 0.8;
+      }
+
+      /* Shop */
+      .shop {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .buyBtn {
+        border: 1px solid #31406f;
+        background: #0e1530;
+        border-radius: 12px;
+        padding: 8px 10px;
+        cursor: pointer;
+      }
+      .buyBtn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Quests */
+      .quests {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .npc {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .npc .avatar {
+        font-size: 22px;
+      }
+      .questCard {
+        border: 1px solid #2a3553;
+        background: #0e1530;
+        border-radius: 12px;
+        padding: 10px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+      }
+      .qtitle {
+        font-weight: 700;
+      }
+      .qmeta {
+        font-size: 13px;
+        color: #cfe6ff;
+      }
+      .qbar {
+        height: 8px;
+        background: #0d152c;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .qbar > i {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, #22c55e, #3b82f6);
+      }
+      .qbtns {
+        display: flex;
+        gap: 8px;
+      }
+      .tiny {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .success {
+        color: #86efac;
+      }
+      .expired {
+        color: #fda4af;
+      }
+      .danger {
+        border-color: #5b1f2b;
+        background: #2b0f15;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="title">
+          <div style="font-size: 26px">🌱</div>
+          <h1>EmojiGarden — AFK farming + Quests</h1>
+        </div>
+        <div class="pill" aria-live="polite">
+          <div class="stat" title="Coins on hand">💰 <b id="coins">0</b></div>
+          <div class="stat" title="Seeds owned">
+            🫘 <small>seeds:</small> <b id="seedStats">—</b>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel" aria-label="Choose crop to plant">
+        <div class="toolbar" id="toolbar"></div>
+      </section>
+
+      <div style="height: 12px"></div>
+
+      <section class="panel" aria-label="Garden plots">
+        <div class="grid" id="grid"></div>
+      </section>
+
+      <div style="height: 12px"></div>
+
+      <section class="panel" aria-label="Quests">
+        <div class="quests" id="quests"></div>
+      </section>
+
+      <div style="height: 12px"></div>
+
+      <section class="panel" aria-label="Shop">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+          "
+        >
+          <h3 style="margin: 0; font-size: 16px; color: #cfe6ff">🛒 Shop</h3>
+          <small id="afkNote" style="color: #9fb3d9"></small>
+        </div>
+        <div class="shop" id="shop"></div>
+      </section>
+
+      <div class="footer">
+        <div style="opacity: 0.85">
+          Tip: select a crop above, then tap an empty plot to plant. Ready crops
+          wiggle — tap to harvest.
+        </div>
+        <div>
+          <button id="reset" class="buyBtn danger" title="Clear save & restart">
+            Reset save
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const CROPS = {
+          tomato: {
+            key: "tomato",
+            emoji: "🍅",
+            name: "Tomato",
+            growMs: 15000,
+            buy: 5,
+            sell: 8,
+          },
+          carrot: {
+            key: "carrot",
+            emoji: "🥕",
+            name: "Carrot",
+            growMs: 20000,
+            buy: 6,
+            sell: 10,
+          },
+          lettuce: {
+            key: "lettuce",
+            emoji: "🥬",
+            name: "Lettuce",
+            growMs: 25000,
+            buy: 8,
+            sell: 14,
+          },
+        };
+
+        const NPCS = [
+          {
+            id: "pip",
+            name: "Pip the Pigeon",
+            avatar: "🕊️",
+            line: "Got any fresh veggies?",
+          },
+          {
+            id: "moss",
+            name: "Mossy Gnome",
+            avatar: "🧙‍♂️",
+            line: "My stew needs… something.",
+          },
+          { id: "cap", name: "Captain Carbo", avatar: "🧑‍🍳", line: "Order up!" },
+        ];
+
+        const PLOTS_W = 5,
+          PLOTS_H = 4; // 5x4 grid
+
+        const els = {
+          grid: document.getElementById("grid"),
+          toolbar: document.getElementById("toolbar"),
+          shop: document.getElementById("shop"),
+          coins: document.getElementById("coins"),
+          seedStats: document.getElementById("seedStats"),
+          afkNote: document.getElementById("afkNote"),
+          quests: document.getElementById("quests"),
+          reset: document.getElementById("reset"),
+        };
+
+        const blankState = () => ({
+          coins: 25,
+          seeds: { tomato: 3, carrot: 2, lettuce: 1 },
+          selected: "tomato",
+          plots: Array.from({ length: PLOTS_W * PLOTS_H }, () => null),
+          quest: null, // current quest
+          lastQuestAt: 0,
+          lastSeen: Date.now(),
+          v: 2,
+        });
+
+        let state = load();
+
+        function load() {
+          const raw = localStorage.getItem("emojiGardenV2");
+          let s = raw ? JSON.parse(raw) : migrateOld() || blankState();
+          // AFK progression: advance any crops based on time away
+          const now = Date.now();
+          const delta = Math.max(0, now - (s.lastSeen || now));
+          if (delta > 3000) {
+            els.afkNote.textContent = `AFK gain applied: ${Math.round(
+              delta / 1000
+            )}s away`;
+          }
+          s.plots = s.plots.map((p) => {
+            if (!p) return p;
+            const crop = CROPS[p.crop];
+            if (!crop) return null;
+            if (!p.plantedAt) return p;
+            const elapsed = (p.doneAt ? p.doneAt : now) - p.plantedAt + delta;
+            if (elapsed >= crop.growMs) {
+              return { ...p, doneAt: p.plantedAt + crop.growMs, ready: true };
+            }
+            return p;
+          });
+          // Expire quest if time passed
+          if (
+            s.quest &&
+            s.quest.status !== "completed" &&
+            s.quest.expiresAt &&
+            now > s.quest.expiresAt
+          ) {
+            s.quest.status = "expired";
+          }
+          s.lastSeen = now;
+          save(s);
+          return s;
+        }
+
+        function migrateOld() {
+          try {
+            const raw = localStorage.getItem("emojiGardenV1");
+            if (!raw) return null;
+            const old = JSON.parse(raw);
+            const s = blankState();
+            s.coins = old.coins || s.coins;
+            s.seeds = old.seeds || s.seeds;
+            s.selected = old.selected || s.selected;
+            s.plots = old.plots || s.plots;
+            s.lastSeen = old.lastSeen || s.lastSeen;
+            return s;
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function save(s = state) {
+          s.lastSeen = Date.now();
+          try {
+            localStorage.setItem("emojiGardenV2", JSON.stringify(s));
+          } catch (e) {
+            console.warn("Save failed", e);
+          }
+        }
+
+        function money(n) {
+          return Math.max(0, Math.floor(n));
+        }
+
+        function render() {
+          // header stats
+          els.coins.textContent = state.coins;
+          els.seedStats.textContent = Object.keys(CROPS)
+            .map((k) => `${CROPS[k].emoji} ${state.seeds[k] || 0}`)
+            .join("  ");
+
+          // toolbar
+          els.toolbar.innerHTML = "";
+          Object.values(CROPS).forEach((c) => {
+            const btn = document.createElement("button");
+            btn.className = "cropBtn";
+            btn.setAttribute("aria-pressed", state.selected === c.key);
+            btn.innerHTML = `<span class="cropMeta"><span style="font-size:22px">${
+              c.emoji
+            }</span> <b>${c.name}</b></span> <span class="badge">${Math.round(
+              c.growMs / 1000
+            )}s</span>`;
+            btn.onclick = () => {
+              state.selected = c.key;
+              render();
+              save();
+            };
+            els.toolbar.appendChild(btn);
+          });
+
+          // grid
+          els.grid.innerHTML = "";
+          state.plots.forEach((p, i) => {
+            const d = document.createElement("div");
+            d.className = "plot" + (p ? "" : " empty");
+            d.setAttribute("role", "button");
+            d.setAttribute(
+              "aria-label",
+              p ? `${CROPS[p.crop].name} plot` : "Empty plot"
+            );
+
+            if (!p) {
+              d.textContent = "➕";
+              d.title = "Empty plot — click to plant";
+              d.onclick = () => plant(i);
+            } else {
+              const crop = CROPS[p.crop];
+              const now = Date.now();
+              const elapsed = Math.min(
+                crop.growMs,
+                (p.doneAt ? p.doneAt : now) - p.plantedAt
+              );
+              const pct = Math.max(0, Math.min(1, elapsed / crop.growMs));
+              const ready = !!p.ready || pct >= 1;
+
+              const emoji = document.createElement("div");
+              emoji.style.fontSize = "28px";
+              emoji.textContent = ready ? crop.emoji : "🌱";
+              emoji.style.transform = ready ? "translateY(-1px)" : "";
+              emoji.style.animation = ready
+                ? "wiggle .6s ease-in-out infinite alternate"
+                : "";
+              d.appendChild(emoji);
+
+              const t = document.createElement("div");
+              t.className = "timer";
+              t.textContent = ready
+                ? "ready"
+                : `${Math.ceil((crop.growMs - elapsed) / 1000)}s`;
+              d.appendChild(t);
+
+              const h = document.createElement("div");
+              h.className = "hint";
+              h.textContent = ready ? "tap to harvest" : "";
+              d.appendChild(h);
+
+              const bar = document.createElement("div");
+              bar.className = "progress";
+              bar.innerHTML = `<i style="width:${(pct * 100).toFixed(
+                0
+              )}%"></i>`;
+              d.appendChild(bar);
+
+              d.onclick = () => (ready ? harvest(i) : nudge(i));
+            }
+            els.grid.appendChild(d);
+          });
+
+          // quests
+          renderQuests();
+
+          // shop
+          els.shop.innerHTML = "";
+          Object.values(CROPS).forEach((c) => {
+            const b = document.createElement("button");
+            b.className = "buyBtn";
+            b.disabled = state.coins < c.buy;
+            b.innerHTML = `${c.emoji} Buy 1 seed – $${c.buy}`;
+            b.onclick = () => {
+              if (state.coins >= c.buy) {
+                state.coins = money(state.coins - c.buy);
+                state.seeds[c.key] = (state.seeds[c.key] || 0) + 1;
+                save();
+                render();
+              }
+            };
+            els.shop.appendChild(b);
+          });
+        }
+
+        function renderQuests() {
+          const qWrap = els.quests;
+          qWrap.innerHTML = "";
+          const q = ensureQuest();
+          const npc = NPCS.find((n) => n.id === q.npc) || NPCS[0];
+
+          const head = document.createElement("div");
+          head.className = "npc";
+          head.innerHTML = `<div class="avatar">${npc.avatar}</div><div><div><b>${npc.name}</b></div><div class="tiny">${npc.line}</div></div>`;
+          qWrap.appendChild(head);
+
+          const card = document.createElement("div");
+          card.className = "questCard";
+
+          const left = document.createElement("div");
+          left.innerHTML = `
+        <div class="qtitle">Request: ${q.need} × ${CROPS[q.crop].emoji} ${
+            CROPS[q.crop].name
+          }</div>
+        <div class="qmeta">Reward: 💰 ${q.rewardCoins} ${
+            q.rewardSeeds
+              ? " · 🫘 +" +
+                q.rewardSeeds +
+                " " +
+                CROPS[q.crop].name +
+                " seed" +
+                (q.rewardSeeds > 1 ? "s" : "")
+              : ""
+          }</div>
+        <div class="qmeta">Status: ${statusText(q)}</div>
+        <div class="qbar"><i style="width:${Math.min(
+          100,
+          Math.round((q.have / q.need) * 100)
+        )}%"></i></div>
+        <div class="tiny">${deadlineText(q)}</div>
+      `;
+
+          const right = document.createElement("div");
+          right.className = "qbtns";
+
+          const accept = document.createElement("button");
+          accept.className = "buyBtn";
+          accept.textContent = "Accept";
+          accept.disabled = q.status !== "offered";
+          accept.onclick = () => {
+            q.status = "active";
+            save();
+            renderQuests();
+          };
+
+          const abandon = document.createElement("button");
+          abandon.className = "buyBtn";
+          abandon.textContent = "Abandon";
+          abandon.disabled = q.status !== "active";
+          abandon.onclick = () => {
+            q.status = "expired";
+            save();
+            renderQuests();
+          };
+
+          const claim = document.createElement("button");
+          claim.className = "buyBtn";
+          claim.textContent = "Claim";
+          claim.disabled =
+            !(q.status === "active" && q.have >= q.need) &&
+            q.status !== "completed";
+          claim.onclick = () => {
+            completeQuest();
+          };
+
+          right.appendChild(accept);
+          right.appendChild(abandon);
+          right.appendChild(claim);
+
+          card.appendChild(left);
+          card.appendChild(right);
+          qWrap.appendChild(card);
+        }
+
+        function statusText(q) {
+          if (q.status === "completed") return "Completed ✔";
+          if (q.status === "expired") return "Expired ✖";
+          if (q.status === "offered") return "Offered — accept to start";
+          if (q.status === "active") {
+            if (q.expiresAt)
+              return `Active · ${Math.max(
+                0,
+                Math.ceil((q.expiresAt - Date.now()) / 1000)
+              )}s left`;
+            return "Active";
+          }
+          return "—";
+        }
+
+        function deadlineText(q) {
+          if (q.status === "expired") return "Order expired. New one soon.";
+          if (q.status === "completed") return "Nice work! Claim your reward.";
+          if (!q.expiresAt) return "No time limit";
+          const left = Math.max(0, q.expiresAt - Date.now());
+          return `${Math.ceil(left / 1000)}s to deliver`;
+        }
+
+        function ensureQuest() {
+          if (
+            state.quest &&
+            (state.quest.status === "offered" ||
+              state.quest.status === "active" ||
+              state.quest.status === "completed")
+          )
+            return state.quest;
+          // generate a new quest
+          const now = Date.now();
+          const cropKeys = Object.keys(CROPS);
+          const crop = cropKeys[Math.floor(Math.random() * cropKeys.length)];
+          const base = { tomato: 4, carrot: 3, lettuce: 2 }[crop];
+          const need = base + Math.floor(Math.random() * 3); // small variation
+          const rewardCoins = 6 * need; // simple scaling
+          const rewardSeeds = Math.random() < 0.4 ? 1 : 0;
+          const npc = NPCS[Math.floor(Math.random() * NPCS.length)].id;
+          const limitSec = 120 + Math.floor(Math.random() * 90); // 2–3.5 minutes
+          state.quest = {
+            id: "q_" + now,
+            npc,
+            crop,
+            need,
+            have: 0,
+            rewardCoins,
+            rewardSeeds,
+            createdAt: now,
+            expiresAt: now + limitSec * 1000,
+            status: "offered",
+          };
+          state.lastQuestAt = now;
+          save();
+          return state.quest;
+        }
+
+        function trackQuestProgress(cropKey) {
+          const q = state.quest;
+          if (!q) return;
+          if (q.status !== "active") return;
+          // increment only for the requested crop
+          if (q.crop === cropKey && q.have < q.need) {
+            q.have += 1;
+            if (q.have >= q.need) {
+              // auto-mark as completed but require claiming
+              q.status = "completed";
+            }
+            save();
+            renderQuests();
+          }
+        }
+
+        function completeQuest() {
+          const q = state.quest;
+          if (!q) return;
+          if (q.status !== "completed") return;
+          state.coins = money(state.coins + q.rewardCoins);
+          if (q.rewardSeeds) {
+            state.seeds[q.crop] = (state.seeds[q.crop] || 0) + q.rewardSeeds;
+          }
+          // clear and roll next
+          state.quest = { status: "cooldown", nextAt: Date.now() + 8000 };
+          save();
+          // spawn next after short delay
+          setTimeout(() => {
+            ensureQuest();
+            render();
+          }, 500);
+          render();
+        }
+
+        function plant(idx) {
+          const key = state.selected;
+          const seeds = state.seeds[key] || 0;
+          if (seeds <= 0) {
+            pulseShop();
+            return;
+          }
+          state.seeds[key] = seeds - 1;
+          state.plots[idx] = { crop: key, plantedAt: Date.now(), ready: false };
+          save();
+          render();
+        }
+
+        function harvest(idx) {
+          const plot = state.plots[idx];
+          if (!plot) return;
+          const crop = CROPS[plot.crop];
+          state.coins = money(state.coins + crop.sell);
+          state.plots[idx] = null;
+          // quest tracking
+          trackQuestProgress(crop.key);
+          save();
+          render();
+        }
+
+        function nudge(idx) {
+          // little feedback bump when not ready
+          const el = els.grid.children[idx];
+          el.style.transform = "translateY(1px) scale(.995)";
+          setTimeout(() => {
+            el.style.transform = "";
+          }, 60);
+        }
+
+        function pulseShop() {
+          els.shop.style.boxShadow = "0 0 0 0 rgba(59,130,246,.7)";
+          els.shop.animate(
+            [
+              { boxShadow: "0 0 0 0 rgba(59,130,246,.7)" },
+              { boxShadow: "0 0 0 12px rgba(59,130,246,0)" },
+            ],
+            { duration: 600 }
+          );
+        }
+
+        // Ticker to update progress bars and quest timers
+        setInterval(() => {
+          // update crops
+          state.plots.forEach((p, i) => {
+            if (!p) return;
+            const crop = CROPS[p.crop];
+            const card = els.grid.children[i];
+            if (!card) return;
+            const now = Date.now();
+            const elapsed = Math.min(
+              crop.growMs,
+              (p.doneAt ? p.doneAt : now) - p.plantedAt
+            );
+            const pct = Math.max(0, Math.min(1, elapsed / crop.growMs));
+            const ready = !!p.ready || pct >= 1;
+            const timerEl = card.querySelector(".timer");
+            const bar = card.querySelector(".progress > i");
+            const emoji = card.firstChild;
+            if (timerEl)
+              timerEl.textContent = ready
+                ? "ready"
+                : `${Math.ceil((crop.growMs - elapsed) / 1000)}s`;
+            if (bar) bar.style.width = (pct * 100).toFixed(0) + "%";
+            if (ready && !p.ready) {
+              p.ready = true;
+              p.doneAt = p.plantedAt + crop.growMs;
+              emoji.textContent = crop.emoji;
+              save();
+            }
+          });
+
+          // quest timer/status
+          if (state.quest) {
+            if (
+              state.quest.status === "cooldown" &&
+              Date.now() >= state.quest.nextAt
+            ) {
+              ensureQuest();
+              renderQuests();
+            }
+            if (
+              state.quest.status === "active" &&
+              state.quest.expiresAt &&
+              Date.now() > state.quest.expiresAt
+            ) {
+              state.quest.status = "expired";
+              save();
+              renderQuests();
+            }
+            // live refresh of text/progress bar
+            const qWrap = els.quests;
+            const bar = qWrap.querySelector(".qbar > i");
+            if (bar && state.quest && state.quest.need) {
+              bar.style.width =
+                Math.min(
+                  100,
+                  Math.round((state.quest.have / state.quest.need) * 100)
+                ) + "%";
+            }
+            const statusElm = qWrap.querySelector(".qmeta:nth-of-type(2)");
+            if (statusElm && state.quest) {
+              statusElm.textContent = "Status: " + statusText(state.quest);
+            }
+            const tiny = qWrap.querySelector(".tiny");
+            if (tiny && state.quest) {
+              tiny.textContent = deadlineText(state.quest);
+            }
+          }
+        }, 250);
+
+        // Reset
+        els.reset.addEventListener("click", () => {
+          if (confirm("Reset your EmojiGarden save?")) {
+            state = blankState();
+            save();
+            render();
+          }
+        });
+
+        // Little keybinds: 1/2/3 selects crop
+        window.addEventListener("keydown", (e) => {
+          if (["1", "2", "3"].includes(e.key)) {
+            const keys = Object.keys(CROPS);
+            state.selected = keys[Number(e.key) - 1] || state.selected;
+            render();
+            save();
+          }
+        });
+
+        // Wiggle keyframes
+        const style = document.createElement("style");
+        style.textContent = `@keyframes wiggle{from{transform:translateY(-1px) rotate(-1deg)} to{transform:translateY(-1px) rotate(1deg)}}`;
+        document.head.appendChild(style);
+
+        // Kickoff
+        render();
+      })();
+    </script>
+  </body>
+</html>
